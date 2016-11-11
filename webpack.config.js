@@ -1,7 +1,11 @@
+var path = require('path')
 module.exports = {
-  entry: './src/test.js',
+  entry: './src/index.js',
   output: {
-    filename: './dist/bundle.js'
+    filename: 'mydux.js',
+    library: 'mydux',
+    libraryTarget: 'umd',
+    path: path.resolve(__dirname, './dist')
   },
   module: {
     loaders: [
@@ -12,6 +16,5 @@ module.exports = {
       }
     ]
   },
-  watch: true,
   devtool: 'source-map'
 }

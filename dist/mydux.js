@@ -1,4 +1,14 @@
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else if(typeof exports === 'object')
+		exports["mydux"] = factory();
+	else
+		root["mydux"] = factory();
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -46,94 +56,24 @@
 
 	'use strict';
 	
-	// require('../test/mydux')
-	// require('../test/combineReducer')
-	__webpack_require__(1);
-
-/***/ },
-/* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.applyMiddleware = exports.combineReducer = exports.createStore = exports.thunkMiddlware = exports.promiseMiddleware = undefined;
 	
-	var _src = __webpack_require__(2);
-	
-	var _promise = __webpack_require__(3);
+	var _promise = __webpack_require__(1);
 	
 	var _promise2 = _interopRequireDefault(_promise);
 	
-	var _thunk = __webpack_require__(4);
+	var _thunk = __webpack_require__(2);
 	
 	var _thunk2 = _interopRequireDefault(_thunk);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	var initState = {
-	  a: 1,
-	  b: 2,
-	  c: 3,
-	  REDUCE_1: 10
-	};
+	var promiseMiddleware = exports.promiseMiddleware = _promise2.default;
+	var thunkMiddlware = exports.thunkMiddlware = _thunk2.default;
 	
-	var reducer = function reducer(state, action) {
-	  switch (action.type) {
-	    case 'REDUCE_1':
-	      state.REDUCE_1++;
-	      return state;
-	    case 'Sync':
-	      state.REDUCE_1 += action.playload;
-	      return state;
-	    default:
-	      return state;
-	  }
-	};
-	
-	// 注意action是否可以修改咧，比如支持promise的action
-	var logger = function logger(store) {
-	  return function (next) {
-	    return function (action) {
-	      console.log('开始接受之前的状态', store.getState());
-	      next(action);
-	      console.log('结束接受之后的状态', store.getState());
-	    };
-	  };
-	};
-	
-	var store = (0, _src.createStore)(reducer, initState, (0, _src.applyMiddleware)(_thunk2.default, _promise2.default, logger));
-	
-	store.subsribe(function () {
-	  console.log('we got new state: ', store.getState());
-	});
-	
-	// Promise
-	store.dispatch(new Promise(function (resolve, reject) {
-	  setTimeout(function () {
-	    resolve({
-	      type: 'Sync',
-	      playload: 23333
-	    });
-	  }, 2000);
-	}));
-	
-	// thunk
-	store.dispatch(function (dispatch) {
-	  setTimeout(function () {
-	    dispatch({
-	      type: 'Sync',
-	      playload: 11111111
-	    });
-	  }, 2000);
-	});
-
-/***/ },
-/* 2 */
-/***/ function(module, exports) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
 	var createStore = exports.createStore = function createStore(reducer) {
 	  var initState = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 	  var applyMiddleware = arguments[2];
@@ -151,6 +91,12 @@
 	    });
 	  };
 	  var dispatch = function dispatch(action) {
+	    if (Array.isArray(action) || toString.call(action) === '[object Array]') {
+	      action.forEach(function (_action) {
+	        return dispatch(_action);
+	      });
+	      return;
+	    }
 	    if (applyMiddleware) {
 	      applyMiddleware({
 	        dispatch: _dispatch,
@@ -208,7 +154,7 @@
 	};
 
 /***/ },
-/* 3 */
+/* 1 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -246,7 +192,7 @@
 	}
 
 /***/ },
-/* 4 */
+/* 2 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -268,5 +214,7 @@
 	}
 
 /***/ }
-/******/ ]);
-//# sourceMappingURL=bundle.js.map
+/******/ ])
+});
+;
+//# sourceMappingURL=mydux.js.map

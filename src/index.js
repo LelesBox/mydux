@@ -1,3 +1,9 @@
+import promise from '../src/middlewares/promise'
+import thunk from '../src/middlewares/thunk'
+
+export var promiseMiddleware = promise
+export var thunkMiddlware = thunk
+
 export var createStore = function (reducer, initState = {}, applyMiddleware) {
   if (typeof initState === 'function') {
     applyMiddleware = initState
@@ -9,7 +15,11 @@ export var createStore = function (reducer, initState = {}, applyMiddleware) {
     state = reducer(state, action)
     listeners.forEach(listener => listener())
   }
-  var dispatch = function (action) {
+  var dispatch = function dispatch (action) {
+    if (Array.isArray(action) || toString.call(action) === '[object Array]') {
+      action.forEach(_action => dispatch(_action))
+      return
+    }
     if (applyMiddleware) {
       applyMiddleware({
         dispatch: _dispatch,
