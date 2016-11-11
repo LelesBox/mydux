@@ -1,4 +1,6 @@
 import { createStore, applyMiddleware } from '../src'
+import promiseMiddleware from '../src/middlewares/promise'
+import thunk from '../src/middlewares/thunk'
 
 var initState = {
   a: 1,
@@ -22,52 +24,37 @@ var reducer = function (state, action) {
 
 // 注意action是否可以修改咧，比如支持promise的action
 var logger = (store) => next => action => {
-  // console.log(action)
   console.log('开始接受之前的状态', store.getState())
   next(action)
   console.log('结束接受之后的状态', store.getState())
 }
 
-var promiseMiddleware = store => next => action => {
-  if (action.playload.then) {
-    action.playload.then(
-      result => {
-        next(result)
-      },
-      error => {
-        store.dispatch({...action, playload: error})
-        return Promise.reject(error)
-      })
-  } else {
-    next(action)
-  }
-}
-
 var store = createStore(
   reducer,
   initState,
-  applyMiddleware(promiseMiddleware, logger)
+  applyMiddleware(thunk, promiseMiddleware, logger)
  )
 
 store.subsribe(function () {
   console.log('we got new state: ', store.getState())
 })
 
-store.$dispatch({
-  playload: new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve({
-        type: 'Sync',
-        playload: 23333
-      })
-    }, 2000)
-  })
+// Promise
+store.dispatch(new Promise((resolve, reject) => {
+  setTimeout(() => {
+    resolve({
+      type: 'Sync',
+      playload: 23333
+    })
+  }, 2000)
+}))
+
+// thunk
+store.dispatch((dispatch) => {
+  setTimeout(() => {
+    dispatch({
+      type: 'Sync',
+      playload: 11111111
+    })
+  }, 2000)
 })
-// var idx = 0
-// var interval = setInterval(function () {
-//   var i = idx++
-//
-//   if (idx > 2) {
-//     clearInterval(interval)
-//   }
-// }, 500)

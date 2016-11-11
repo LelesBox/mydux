@@ -56,9 +56,17 @@
 
 	'use strict';
 	
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-	
 	var _src = __webpack_require__(2);
+	
+	var _promise = __webpack_require__(3);
+	
+	var _promise2 = _interopRequireDefault(_promise);
+	
+	var _thunk = __webpack_require__(4);
+	
+	var _thunk2 = _interopRequireDefault(_thunk);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	var initState = {
 	  a: 1,
@@ -84,7 +92,6 @@
 	var logger = function logger(store) {
 	  return function (next) {
 	    return function (action) {
-	      // console.log(action)
 	      console.log('开始接受之前的状态', store.getState());
 	      next(action);
 	      console.log('结束接受之后的状态', store.getState());
@@ -92,53 +99,37 @@
 	  };
 	};
 	
-	var promiseMiddleware = function promiseMiddleware(store) {
-	  return function (next) {
-	    return function (action) {
-	      if (action.playload.then) {
-	        action.playload.then(function (result) {
-	          next(result);
-	        }, function (error) {
-	          store.dispatch(_extends({}, action, { playload: error }));
-	          return Promise.reject(error);
-	        });
-	      } else {
-	        next(action);
-	      }
-	    };
-	  };
-	};
-	
-	var store = (0, _src.createStore)(reducer, initState, (0, _src.applyMiddleware)(promiseMiddleware, logger));
+	var store = (0, _src.createStore)(reducer, initState, (0, _src.applyMiddleware)(_thunk2.default, _promise2.default, logger));
 	
 	store.subsribe(function () {
 	  console.log('we got new state: ', store.getState());
 	});
 	
-	store.$dispatch({
-	  playload: new Promise(function (resolve, reject) {
-	    setTimeout(function () {
-	      resolve({
-	        type: 'Sync',
-	        playload: 23333
-	      });
-	    }, 2000);
-	  })
+	// Promise
+	store.dispatch(new Promise(function (resolve, reject) {
+	  setTimeout(function () {
+	    resolve({
+	      type: 'Sync',
+	      playload: 23333
+	    });
+	  }, 2000);
+	}));
+	
+	// thunk
+	store.dispatch(function (dispatch) {
+	  setTimeout(function () {
+	    dispatch({
+	      type: 'Sync',
+	      playload: 11111111
+	    });
+	  }, 2000);
 	});
-	// var idx = 0
-	// var interval = setInterval(function () {
-	//   var i = idx++
-	//
-	//   if (idx > 2) {
-	//     clearInterval(interval)
-	//   }
-	// }, 500)
 
 /***/ },
 /* 2 */
 /***/ function(module, exports) {
 
-	"use strict";
+	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
@@ -147,19 +138,27 @@
 	  var initState = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 	  var applyMiddleware = arguments[2];
 	
+	  if (typeof initState === 'function') {
+	    applyMiddleware = initState;
+	    initState = {};
+	  }
 	  var state = initState;
 	  var listeners = [];
-	  var dispatch = function dispatch(action) {
+	  var _dispatch = function _dispatch(action) {
 	    state = reducer(state, action);
 	    listeners.forEach(function (listener) {
 	      return listener();
 	    });
 	  };
-	  var $dispatch = function $dispatch(action) {
-	    applyMiddleware({
-	      dispatch: dispatch,
-	      getState: getState
-	    }, action);
+	  var dispatch = function dispatch(action) {
+	    if (applyMiddleware) {
+	      applyMiddleware({
+	        dispatch: _dispatch,
+	        getState: getState
+	      }, action);
+	    } else {
+	      _dispatch(action);
+	    }
 	  };
 	
 	  var subsribe = function subsribe(listener) {
@@ -175,7 +174,6 @@
 	  };
 	  return {
 	    dispatch: dispatch,
-	    $dispatch: $dispatch,
 	    subsribe: subsribe,
 	    getState: getState
 	  };
@@ -200,14 +198,74 @@
 	  return function (store, action) {
 	    // middleware1(middleware2(dispatch))(action)
 	    // 如果倒叙的话就不用这样转了
-	    var mds = [].concat(middlewares).reverse().map(function (m) {
+	    var mds = middlewares.map(function (m) {
 	      return m(store);
 	    });
-	    mds.reduce(function (previous, current) {
+	    mds.reduceRight(function (previous, current) {
 	      return current(previous);
 	    }, store.dispatch)(action);
 	  };
 	};
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+	
+	exports.default = promiseMiddleware;
+	function promiseMiddleware(store) {
+	  return function (next) {
+	    return function (action) {
+	      // 判断action是否是promise方法
+	      if (typeof action.then === 'function') {
+	        action.then(function (result) {
+	          next(result);
+	        }, function (error) {
+	          store.dispatch(_extends({}, action, { playload: error }));
+	          return Promise.reject(error);
+	        });
+	      } else if (action.playload && typeof action.playload.then === 'function') {
+	        action.playload.then(function (result) {
+	          next(result);
+	        }, function (error) {
+	          store.dispatch(_extends({}, action, { playload: error }));
+	          return Promise.reject(error);
+	        });
+	      } else {
+	        next(action);
+	      }
+	    };
+	  };
+	}
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.default = thunk;
+	function thunk(store) {
+	  return function (next) {
+	    return function (action) {
+	      if (typeof action === 'function') {
+	        action(next);
+	      } else {
+	        next(action);
+	      }
+	    };
+	  };
+	}
 
 /***/ }
 /******/ ]);

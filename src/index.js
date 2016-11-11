@@ -1,29 +1,36 @@
 export var createStore = function (reducer, initState = {}, applyMiddleware) {
+  if (typeof initState === 'function') {
+    applyMiddleware = initState
+    initState = {}
+  }
   var state = initState
   var listeners = []
-  var dispatch = function (action) {
+  var _dispatch = function _dispatch (action) {
     state = reducer(state, action)
     listeners.forEach(listener => listener())
   }
-  var $dispatch = function (action) {
-    applyMiddleware({
-      dispatch,
-      getState
-    }, action)
+  var dispatch = function (action) {
+    if (applyMiddleware) {
+      applyMiddleware({
+        dispatch: _dispatch,
+        getState
+      }, action)
+    } else {
+      _dispatch(action)
+    }
   }
 
-  var subsribe = function (listener) {
+  var subsribe = function subsribe (listener) {
     listeners.push(listener)
     return () => {
       listeners = listeners.filter(l => l !== listener)
     }
   }
-  var getState = function () {
+  var getState = function getState () {
     return state
   }
   return {
     dispatch,
-    $dispatch,
     subsribe,
     getState
   }
@@ -44,8 +51,8 @@ export var applyMiddleware = function applyMiddleware (...middlewares) {
   return (store, action) => {
     // middleware1(middleware2(dispatch))(action)
     // 如果倒叙的话就不用这样转了
-    var mds = [].concat(middlewares).reverse().map(m => m(store))
-    mds.reduce((previous, current) => {
+    var mds = middlewares.map(m => m(store))
+    mds.reduceRight((previous, current) => {
       return current(previous)
     }, store.dispatch)(action)
   }
