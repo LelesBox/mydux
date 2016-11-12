@@ -306,7 +306,7 @@ describe('手写实践redux', () => {
     store.dispatch(actions)
   })
 
-  it('同时使用thunk和promise中间件，支持dispatch一个thunk返回的promise', done => {
+  it('同时使用thunk和promise中间件', done => {
     let initState = {
       a: 1,
       b: 2
