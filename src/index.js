@@ -60,7 +60,6 @@ export var combineReducer = function combineReducer (reducers) {
 export var applyMiddleware = function applyMiddleware (...middlewares) {
   return (store, action) => {
     // middleware1(middleware2(dispatch))(action)
-    // 如果倒叙的话就不用这样转了
     var mds = middlewares.map(m => m(store))
     mds.reduceRight((previous, current) => {
       return current(previous)
